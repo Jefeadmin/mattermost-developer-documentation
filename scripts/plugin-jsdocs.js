@@ -1,8 +1,19 @@
 import { parse } from '@typescript-eslint/typescript-estree';
 import fetch from 'node-fetch';
+import { setDefaultResultOrder } from 'node:dns';
+import HttpsProxyAgent from 'https-proxy-agent';
+
+// Force IPv4 resolution to avoid failures in IPv6-only environments.
+if (typeof setDefaultResultOrder === 'function') {
+    setDefaultResultOrder('ipv4first');
+}
+
+const proxy = process.env.https_proxy || process.env.HTTPS_PROXY ||
+    process.env.http_proxy || process.env.HTTP_PROXY;
+const fetchOptions = proxy ? {agent: new HttpsProxyAgent(proxy)} : {};
 
 // Parse the registry and extract the class methods, parameters and leading comments.
-const response = await fetch('https://raw.githubusercontent.com/mattermost/mattermost/master/webapp/channels/src/plugins/registry.ts');
+const response = await fetch('https://raw.githubusercontent.com/mattermost/mattermost/master/webapp/channels/src/plugins/registry.ts', fetchOptions);
 const registryContent = await response.text();
 const registryParsed = parse(registryContent, { comment: true, loc: true });
 
